@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import pe.edu.upeu.pharmamobil.domain.model.mensajeDe
+import pe.edu.upeu.pharmamobil.domain.model.ErrorSesion
+import pe.edu.upeu.pharmamobil.domain.sesion.AvisoSesion
 import pe.edu.upeu.pharmamobil.domain.sesion.AvisosDeSesion
 import pe.edu.upeu.pharmamobil.domain.usecase.CerrarSesionUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.IniciarSesionUseCase
@@ -42,9 +43,9 @@ class SesionViewModel(
         }
 
         viewModelScope.launch {
-            avisos.sesionTerminada.collect { error ->
+            avisos.sesionTerminada.collect { aviso ->
                 if (_uiState.value.sesion != null) {
-                    terminarSesion(aviso = mensajeDe(error))
+                    terminarSesion(aviso = textoDelAviso(aviso))
                 }
             }
         }
@@ -97,15 +98,34 @@ class SesionViewModel(
         viewModelScope.launch { terminarSesion(aviso = null) }
     }
 
+    /**
+     * Cerrar sesion deja la interfaz limpia: ni el usuario anterior ni datos
+     * de la sesion previa quedan en el login. Solo se conserva el contador
+     * idSesion, que no se muestra.
+     */
     private suspend fun terminarSesion(aviso: String?) {
         cerrarSesion.invoke()
         _uiState.update {
             SesionUiState(
-                usuario = it.sesion?.usuario ?: it.usuario,
                 verificando = false,
                 aviso = aviso,
                 idSesion = it.idSesion
             )
         }
+    }
+
+    /**
+     * Un 401 a mitad de la sesion no es un error de credenciales: el usuario
+     * no escribio nada. Se explica que la sesion termino y se muestra el
+     * motivo literal que dio el servidor (token vencido, token alterado,
+     * usuario deshabilitado...). Solo un 401 llega por AvisosDeSesion.
+     */
+    private fun textoDelAviso(aviso: AvisoSesion): String = when {
+        aviso.detalle != null ->
+            "Tu sesión terminó (HTTP 401). PharmaSoft respondió: «${aviso.detalle}»"
+        aviso.error == ErrorSesion.SesionExpirada ->
+            "Tu sesión expiró. Vuelve a iniciar sesión"
+        else ->
+            "Tu sesión ya no es válida. Vuelve a iniciar sesión"
     }
 }

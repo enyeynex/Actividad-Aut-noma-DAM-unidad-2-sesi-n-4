@@ -166,7 +166,7 @@ class ClienteHttpAutenticadoTest {
         val avisos = AvisosDeSesion()
         val recibidos = mutableListOf<ErrorSesion>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            avisos.sesionTerminada.collect { recibidos += it }
+            avisos.sesionTerminada.collect { recibidos += it.error }
         }
         val escenario = Escenario(almacen = FakeAlmacenSeguro("tok-viejo"), avisos = avisos) {
             respondError(HttpStatusCode.Unauthorized, """{"status":401,"message":"El token ha expirado. Inicie sesión nuevamente"}""", json)
@@ -175,6 +175,7 @@ class ClienteHttpAutenticadoTest {
         val fallo = esperarFallo { escenario.productos.listar() }
 
         assertEquals(ErrorSesion.SesionExpirada, fallo.error)
+        assertEquals("El token ha expirado. Inicie sesión nuevamente", fallo.detalle)
         assertEquals(listOf<ErrorSesion>(ErrorSesion.SesionExpirada), recibidos)
     }
 
@@ -184,7 +185,7 @@ class ClienteHttpAutenticadoTest {
         val avisos = AvisosDeSesion()
         val recibidos = mutableListOf<ErrorSesion>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            avisos.sesionTerminada.collect { recibidos += it }
+            avisos.sesionTerminada.collect { recibidos += it.error }
         }
         val escenario = Escenario(almacen = FakeAlmacenSeguro("tok-almacen"), avisos = avisos) {
             respondError(HttpStatusCode.Forbidden, """{"status":403,"message":"Acceso denegado"}""", json)

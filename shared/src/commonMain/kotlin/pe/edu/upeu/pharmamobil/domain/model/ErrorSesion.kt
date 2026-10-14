@@ -12,7 +12,11 @@ sealed interface ErrorSesion {
  * Transporta un [ErrorSesion] a traves de Result. El mensaje es el que ve el
  * usuario, por eso se redacta aqui y no en cada pantalla.
  */
-class FalloSesionException(val error: ErrorSesion) : Exception(mensajeDe(error))
+class FalloSesionException(
+    val error: ErrorSesion,
+    /** Mensaje literal del servidor (campo message), si lo envio. */
+    val detalle: String? = null
+) : Exception(mensajeDe(error))
 
 fun mensajeDe(error: ErrorSesion): String = when (error) {
     ErrorSesion.CredencialesInvalidas -> "Usuario o contraseña incorrectos"

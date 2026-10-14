@@ -123,7 +123,36 @@ class SesionViewModelTest {
         assertNull(estado.sesion)
         assertTrue(repositorio.cerrada)
         assertEquals("Tu sesión expiró. Vuelve a iniciar sesión", estado.aviso)
-        assertEquals("admin", estado.usuario)
+        // La interfaz queda limpia: no se muestra el usuario anterior.
+        assertEquals("", estado.usuario)
+    }
+
+    @Test
+    fun unTokenAlteradoExplicaElMotivoSinCulparALasCredenciales() = runTest {
+        val avisos = AvisosDeSesion()
+        val viewModel = nuevoViewModel(FakeAuthRepository(guardada = admin), avisos)
+
+        avisos.notificar(ErrorSesion.CredencialesInvalidas, "El token no es válido")
+
+        assertEquals(
+            "Tu sesión terminó (HTTP 401). PharmaSoft respondió: «El token no es válido»",
+            viewModel.uiState.value.aviso
+        )
+        assertNull(viewModel.uiState.value.sesion)
+    }
+
+    @Test
+    fun cerrarSesionNoDejaElUsuarioAnteriorEnElLogin() = runTest {
+        val viewModel = nuevoViewModel(FakeAuthRepository(sesionLogin = admin))
+        viewModel.onUsuarioChange("admin")
+        viewModel.onClaveChange("Admin123")
+        viewModel.iniciarSesion()
+
+        viewModel.cerrarSesion()
+
+        assertEquals("", viewModel.uiState.value.usuario)
+        assertEquals("", viewModel.uiState.value.clave)
+        assertNull(viewModel.uiState.value.error)
     }
 
     @Test

@@ -46,9 +46,9 @@ internal suspend fun <T> llamadaApi(
         if (estado == HttpStatusCode.Unauthorized || estado == HttpStatusCode.Forbidden) {
             val errorSesion = mapearErrorSesion(estado, error?.message)
             if (estado == HttpStatusCode.Unauthorized) {
-                avisos?.notificar(errorSesion)
+                avisos?.notificar(errorSesion, error?.message)
             }
-            throw FalloSesionException(errorSesion)
+            throw FalloSesionException(errorSesion, error?.message)
         }
 
         val detalle = error?.validationErrors?.values?.firstOrNull()
