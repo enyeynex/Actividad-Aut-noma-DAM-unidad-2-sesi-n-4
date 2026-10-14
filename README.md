@@ -69,6 +69,51 @@ Rutas relativas a `shared/src/<sourceSet>/kotlin/pe/edu/upeu/pharmamobil/`.
 
 El último comando compila `iosMain` también desde Windows o Linux; enlazar el framework y ejecutar en el simulador requiere macOS con Xcode.
 
+## Autenticación
+
+Sesión 10 · la app inicia sesión contra PharmaSoft, guarda el JWT en el almacén cifrado de cada plataforma y lo adjunta a cada petición con el plugin `Auth` de Ktor. Desde esta sesión los productos y los clientes se leen y se registran en el servidor, no en memoria.
+
+### Antes de ejecutar
+
+1. Levantar PharmaSoft (perfil `dev`, Oracle en `localhost:1522/FREEPDB1`). Flyway crea las tablas y los usuarios de prueba.
+2. Comprobar en `http://localhost:8080/swagger-ui.html` que `POST /api/v1/auth/login` responde 200.
+3. La app llega al servidor por `http://10.0.2.2:8080/api/v1/` en el emulador de Android y por `http://localhost:8080/api/v1/` en el simulador de iOS (`platform/Red.*.kt`).
+
+### Usuarios de prueba
+
+| Usuario | Contraseña | Rol | Qué ve en la app |
+|---|---|---|---|
+| `admin` | `Admin123` | ADMIN | Todo: inventario con registro y clientes. |
+| `vendedor` | `Vendedor123` | VENDEDOR | Inventario solo lectura (sin formulario) y clientes. |
+| `almacen` | `Almacen123` | ALMACENERO | Inventario con registro; la sección de clientes no se ofrece. |
+
+### Piezas
+
+| Pieza | Archivo | Qué hace |
+|---|---|---|
+| Sesión en el dominio | `domain/model/Sesion.kt`, `ErrorSesion.kt`, `domain/repository/AuthRepository.kt` | Credenciales, sesión con permisos (`puede()`) y errores sin hablar de HTTP. |
+| Almacén seguro | `data/local/AlmacenSeguro.kt` | Interfaz común; Android usa `EncryptedSharedPreferences` (`AlmacenSeguroAndroid.kt`) e iOS el Keychain (`AlmacenSeguroIos.kt`). Se registra en cada `platformModule`. |
+| Cliente HTTP | `data/remote/ClienteHttp.kt` | Plugins `ContentNegotiation`, `DefaultRequest`, `Auth` (bearer con `loadTokens` y `sendWithoutRequest`) y `Logging` con `Authorization` saneada y apagado fuera de depuración. |
+| Repositorio | `data/repository/AuthRepositorioRest.kt` | Login, sesión guardada (lee `exp` del token y confirma con `/auth/me`) y cierre de sesión; llama a `clearToken()` tras cada cambio de token. |
+| Errores | `data/remote/ErroresHttp.kt` | `mapearErrorSesion`: 401 → sesión expirada o credenciales inválidas, 403 → sin permiso. Un 401 fuera del login avisa por `AvisosDeSesion`. |
+| Interfaz | `presentation/sesion/` y `App.kt` | `LoginScreen`, `SesionViewModel`, «Cerrar sesión» en el menú y acciones ocultas según permisos. |
+
+### Comportamiento ante errores
+
+- **401** (token vencido o inválido): se cierra la sesión, se borra el token y la app vuelve al login con el aviso «Tu sesión expiró».
+- **403** (rol sin permiso): la sesión se mantiene y la pantalla muestra «No tienes permiso para realizar esta acción».
+- **Sin conexión**: mensaje para revisar que PharmaSoft esté en ejecución.
+
+### Verificación
+
+```
+./gradlew :shared:testAndroidHostTest
+./gradlew :androidApp:assembleDebug
+./gradlew :shared:compileKotlinIosSimulatorArm64
+```
+
+Las pruebas de `ClienteHttpAutenticadoTest` usan `MockEngine`: comprueban la cabecera `Bearer`, que no haya petición previa sin token, el `clearToken()` tras un segundo login, el registro saneado y el mapeo de 401 y 403 sin necesitar el servidor.
+
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…

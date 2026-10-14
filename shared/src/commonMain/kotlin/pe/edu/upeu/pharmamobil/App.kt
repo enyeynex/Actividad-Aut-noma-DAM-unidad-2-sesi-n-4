@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalPharmacy
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,7 +39,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
@@ -47,16 +51,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinContext
 import org.koin.compose.viewmodel.koinViewModel
 
+import pe.edu.upeu.pharmamobil.domain.model.Sesion
 import pe.edu.upeu.pharmamobil.navigation.Screen
 import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteScreen
 import pe.edu.upeu.pharmamobil.presentation.components.EstadoVacio
 import pe.edu.upeu.pharmamobil.presentation.detalle.DetalleProductoScreen
 import pe.edu.upeu.pharmamobil.presentation.inicio.InicioScreen
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoScreen
+import pe.edu.upeu.pharmamobil.presentation.sesion.LoginScreen
+import pe.edu.upeu.pharmamobil.presentation.sesion.SesionViewModel
 import pe.edu.upeu.pharmamobil.theme.PharmaMobilTheme
 
 /** Una sola fuente para el menu lateral y el titulo de la barra superior. */
@@ -83,8 +91,73 @@ private val ScreenSaver = Saver<Screen, Int>(
     }
 )
 
+/** Permisos de PharmaSoft que decide la interfaz (ver PermisosPorRol del backend). */
+private const val CATALOGO_ESCRIBIR = "CATALOGO_ESCRIBIR"
+private const val CLIENTES_LEER = "CLIENTES_LEER"
+
+/**
+ * Punto de entrada. Sin sesion se ve el login; con sesion, la app. El
+ * composable no conoce el token: solo sabe si hay una sesion y que permite.
+ */
 @Composable
 fun App() = KoinContext {
+
+    val sesionViewModel: SesionViewModel = koinViewModel()
+    val estado by sesionViewModel.uiState.collectAsStateWithLifecycle()
+
+    var darkTheme by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    PharmaMobilTheme(
+        darkTheme = darkTheme
+    ) {
+
+        val sesion = estado.sesion
+
+        when {
+
+            estado.verificando ->
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    Box(contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+            sesion == null ->
+                LoginScreen(
+                    estado = estado,
+                    onUsuarioChange = sesionViewModel::onUsuarioChange,
+                    onClaveChange = sesionViewModel::onClaveChange,
+                    onIngresar = sesionViewModel::iniciarSesion
+                )
+
+            // La clave reinicia la navegacion y los ViewModel con cada sesion nueva.
+            else -> key(estado.idSesion) {
+                PantallaPrincipal(
+                    sesion = sesion,
+                    idSesion = estado.idSesion,
+                    darkTheme = darkTheme,
+                    onCambiarTema = { darkTheme = it },
+                    onCerrarSesion = sesionViewModel::cerrarSesion
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun PantallaPrincipal(
+    sesion: Sesion,
+    idSesion: Int,
+    darkTheme: Boolean,
+    onCambiarTema: (Boolean) -> Unit,
+    onCerrarSesion: () -> Unit
+) {
+
+    val puedeVerClientes = sesion.puede(CLIENTES_LEER)
+    val destinos = DESTINOS.filter { it.screen != Screen.Clientes || puedeVerClientes }
 
     var pantallaActual by rememberSaveable(stateSaver = ScreenSaver) {
         mutableStateOf<Screen>(Screen.Inicio)
@@ -95,8 +168,11 @@ fun App() = KoinContext {
         mutableStateOf<Long?>(null)
     }
 
-    var darkTheme by rememberSaveable {
-        mutableStateOf(false)
+    // Un usuario sin CLIENTES_LEER no se queda en esa seccion.
+    LaunchedEffect(puedeVerClientes) {
+        if (!puedeVerClientes && pantallaActual == Screen.Clientes) {
+            pantallaActual = Screen.Inicio
+        }
     }
 
     val drawerState = rememberDrawerState(
@@ -105,9 +181,7 @@ fun App() = KoinContext {
 
     val scope = rememberCoroutineScope()
 
-    PharmaMobilTheme(
-        darkTheme = darkTheme
-    ) {
+    run {
 
         ModalNavigationDrawer(
 
@@ -117,7 +191,7 @@ fun App() = KoinContext {
 
                 ModalDrawerSheet {
 
-                    DrawerHeader()
+                    DrawerHeader(sesion)
 
                     HorizontalDivider()
 
@@ -125,7 +199,7 @@ fun App() = KoinContext {
                         modifier = Modifier.height(12.dp)
                     )
 
-                    DESTINOS.forEach { destino ->
+                    destinos.forEach { destino ->
 
                         NavigationDrawerItem(
                             label = {
@@ -159,9 +233,32 @@ fun App() = KoinContext {
 
                     HorizontalDivider()
 
+                    // Borra el token del almacen y devuelve al login.
+                    NavigationDrawerItem(
+                        label = {
+                            Text("Cerrar sesión")
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                            }
+                            onCerrarSesion()
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Logout,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.padding(
+                            NavigationDrawerItemDefaults.ItemPadding
+                        )
+                    )
+
                     ModoOscuro(
                         activo = darkTheme,
-                        onCambiar = { darkTheme = it }
+                        onCambiar = onCambiarTema
                     )
                 }
             }
@@ -241,7 +338,8 @@ fun App() = KoinContext {
                             InicioScreen(
                                 onNavegar = { destino ->
                                     pantallaActual = destino
-                                }
+                                },
+                                puedeVerClientes = puedeVerClientes
                             )
 
                         Screen.Productos -> {
@@ -251,7 +349,8 @@ fun App() = KoinContext {
                             if (productoId == null) {
 
                                 ProductoScreen(
-                                    viewModel = koinViewModel(),
+                                    viewModel = koinViewModel(key = "productos-$idSesion"),
+                                    puedeRegistrar = sesion.puede(CATALOGO_ESCRIBIR),
                                     onVerDetalle = { id ->
                                         productoEnDetalle = id
                                     }
@@ -271,7 +370,7 @@ fun App() = KoinContext {
 
                         Screen.Clientes ->
                             ClienteScreen(
-                                viewModel = koinViewModel()
+                                viewModel = koinViewModel(key = "clientes-$idSesion")
                             )
 
                         Screen.Pedidos ->
@@ -290,7 +389,7 @@ fun App() = KoinContext {
 
 
 @Composable
-private fun DrawerHeader() {
+private fun DrawerHeader(sesion: Sesion) {
 
     Row(
         modifier = Modifier
@@ -323,7 +422,12 @@ private fun DrawerHeader() {
             )
 
             Text(
-                text = "Gestión farmacéutica",
+                text = sesion.nombreCompleto,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Text(
+                text = "Usuario: ${sesion.usuario}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

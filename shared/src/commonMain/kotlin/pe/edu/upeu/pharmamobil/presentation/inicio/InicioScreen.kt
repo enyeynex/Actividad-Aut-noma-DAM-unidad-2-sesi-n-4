@@ -61,7 +61,8 @@ private val OPCIONES = listOf(
 @Composable
 fun InicioScreen(
     onNavegar: (Screen) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    puedeVerClientes: Boolean = true
 ) {
 
     Column(
@@ -79,7 +80,7 @@ fun InicioScreen(
             style = MaterialTheme.typography.titleMedium
         )
 
-        OPCIONES.forEach { opcion ->
+        OPCIONES.filter { puedeVerClientes || it.screen != Screen.Clientes }.forEach { opcion ->
 
             AccesoRapido(
                 icono = opcion.icono,

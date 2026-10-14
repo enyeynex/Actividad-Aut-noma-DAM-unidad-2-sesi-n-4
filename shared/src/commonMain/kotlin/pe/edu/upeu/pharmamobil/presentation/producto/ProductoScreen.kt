@@ -38,6 +38,7 @@ import pe.edu.upeu.pharmamobil.presentation.components.ValidatedTextField
 fun ProductoScreen(
     viewModel: ProductoViewModel,
     modifier: Modifier = Modifier,
+    puedeRegistrar: Boolean = true,
     onVerDetalle: (Long) -> Unit = {}
 ) {
 
@@ -50,14 +51,18 @@ fun ProductoScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-        FormularioProductoCard(
-            formulario = uiState.formulario,
-            registrando = uiState.registrando,
-            onNombreChange = viewModel::onNombreChange,
-            onPrecioChange = viewModel::onPrecioChange,
-            onStockChange = viewModel::onStockChange,
-            onRegistrar = viewModel::registrar
-        )
+        // Solo quien tiene CATALOGO_ESCRIBIR ve el formulario: el servidor
+        // responderia 403 a los demas.
+        if (puedeRegistrar) {
+            FormularioProductoCard(
+                formulario = uiState.formulario,
+                registrando = uiState.registrando,
+                onNombreChange = viewModel::onNombreChange,
+                onPrecioChange = viewModel::onPrecioChange,
+                onStockChange = viewModel::onStockChange,
+                onRegistrar = viewModel::registrar
+            )
+        }
 
         uiState.mensajeExito?.let {
             MensajeExito(it)
