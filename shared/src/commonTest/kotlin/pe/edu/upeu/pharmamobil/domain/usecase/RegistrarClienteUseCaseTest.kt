@@ -18,12 +18,13 @@ class RegistrarClienteUseCaseTest {
     ) = RegistrarClienteUseCase(repositorio)
 
     private suspend fun erroresAlRegistrar(
+        dni: String = "70123456",
         nombre: String = "Farmacia Nueva Vida",
         correo: String = "ventas@central.pe",
         telefono: String = "989789123"
     ): ErroresDeCliente {
 
-        val resultado = nuevoCasoDeUso().invoke(nombre, correo, telefono)
+        val resultado = nuevoCasoDeUso().invoke(dni, nombre, correo, telefono)
         val fallo = assertIs<ClienteInvalidoException>(resultado.exceptionOrNull())
         return fallo.errores
     }
@@ -32,7 +33,7 @@ class RegistrarClienteUseCaseTest {
     fun aceptaUnClienteValido() = runTest {
 
         val resultado = nuevoCasoDeUso()
-            .invoke("Farmacia Nueva Vida", "ventas@central.pe", "989789123")
+            .invoke("70123456", "Farmacia Nueva Vida", "ventas@central.pe", "989789123")
 
         assertNull(resultado.exceptionOrNull())
         assertEquals("989789123", resultado.getOrThrow().telefono)
@@ -55,10 +56,26 @@ class RegistrarClienteUseCaseTest {
     }
 
     @Test
-    fun rechazaTelefonoConMenosDeSeisDigitos() = runTest {
+    fun rechazaTelefonoQueNoTieneNueveDigitos() = runTest {
         assertEquals(
-            "El teléfono debe tener entre 6 y 9 dígitos",
+            "El teléfono debe tener 9 dígitos",
             erroresAlRegistrar(telefono = "12345").telefono
+        )
+    }
+
+    @Test
+    fun rechazaDniQueNoTieneOchoDigitos() = runTest {
+        assertEquals(
+            "El DNI debe tener 8 dígitos",
+            erroresAlRegistrar(dni = "1234").dni
+        )
+    }
+
+    @Test
+    fun pideNombreYApellido() = runTest {
+        assertEquals(
+            "Escribe nombre y apellido",
+            erroresAlRegistrar(nombre = "Lucia").nombre
         )
     }
 
@@ -66,7 +83,7 @@ class RegistrarClienteUseCaseTest {
     fun elTelefonoEsOpcionalYSeGuardaComoNull() = runTest {
 
         val resultado = nuevoCasoDeUso()
-            .invoke("Farmacia Nueva Vida", "ventas@central.pe", "   ")
+            .invoke("70123456", "Farmacia Nueva Vida", "ventas@central.pe", "   ")
 
         assertNull(resultado.exceptionOrNull())
         assertNull(resultado.getOrThrow().telefono)
@@ -79,7 +96,7 @@ class RegistrarClienteUseCaseTest {
 
         assertEquals("El nombre es obligatorio", errores.nombre)
         assertEquals("El correo es obligatorio", errores.correo)
-        assertEquals("El teléfono debe tener entre 6 y 9 dígitos", errores.telefono)
+        assertEquals("El teléfono debe tener 9 dígitos", errores.telefono)
     }
 
     @Test
@@ -87,8 +104,8 @@ class RegistrarClienteUseCaseTest {
 
         val casoDeUso = nuevoCasoDeUso()
 
-        val primero = casoDeUso.invoke("Botica A", "a@central.pe", "").getOrThrow()
-        val segundo = casoDeUso.invoke("Botica B", "b@central.pe", "").getOrThrow()
+        val primero = casoDeUso.invoke("70123456", "Botica A", "a@central.pe", "").getOrThrow()
+        val segundo = casoDeUso.invoke("70123457", "Botica B", "b@central.pe", "").getOrThrow()
 
         assertEquals(1L, primero.id)
         assertEquals(2L, segundo.id)
@@ -102,7 +119,7 @@ class RegistrarClienteUseCaseTest {
         }
 
         val resultado = nuevoCasoDeUso(repositorio)
-            .invoke("Farmacia Nueva Vida", "ventas@central.pe", "989789123")
+            .invoke("70123456", "Farmacia Nueva Vida", "ventas@central.pe", "989789123")
 
         assertEquals("Sin conexión", resultado.exceptionOrNull()?.message)
     }

@@ -22,9 +22,11 @@ data class ClienteUiState(
 }
 
 data class FormularioCliente(
+    val dni: String = "",
     val nombre: String = "",
     val correo: String = "",
     val telefono: String = "",
+    val dniError: String? = null,
     val nombreError: String? = null,
     val correoError: String? = null,
     val telefonoError: String? = null

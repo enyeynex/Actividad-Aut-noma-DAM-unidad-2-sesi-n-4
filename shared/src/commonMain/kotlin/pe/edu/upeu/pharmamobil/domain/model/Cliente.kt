@@ -4,7 +4,9 @@ data class Cliente(
     val id: Long,
     val nombre:String,
     val correo:String,
-    val telefono: String?
+    val telefono: String?,
+    /** PharmaSoft identifica al cliente por su DNI (8 digitos). */
+    val dni: String = ""
 ){
 
     init {

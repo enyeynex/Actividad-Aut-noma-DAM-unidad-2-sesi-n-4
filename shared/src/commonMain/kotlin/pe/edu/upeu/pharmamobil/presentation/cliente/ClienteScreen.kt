@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Group
@@ -54,6 +55,7 @@ fun ClienteScreen(
         FormularioClienteCard(
             formulario = uiState.formulario,
             registrando = uiState.registrando,
+            onDniChange = viewModel::onDniChange,
             onNombreChange = viewModel::onNombreChange,
             onCorreoChange = viewModel::onCorreoChange,
             onTelefonoChange = viewModel::onTelefonoChange,
@@ -133,6 +135,7 @@ fun ClienteScreen(
 private fun FormularioClienteCard(
     formulario: FormularioCliente,
     registrando: Boolean,
+    onDniChange: (String) -> Unit,
     onNombreChange: (String) -> Unit,
     onCorreoChange: (String) -> Unit,
     onTelefonoChange: (String) -> Unit,
@@ -154,9 +157,19 @@ private fun FormularioClienteCard(
             )
 
             ValidatedTextField(
+                value = formulario.dni,
+                onValueChange = onDniChange,
+                label = "DNI",
+                error = formulario.dniError,
+                leadingIcon = Icons.Default.Badge,
+                keyboardType = KeyboardType.Number,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            ValidatedTextField(
                 value = formulario.nombre,
                 onValueChange = onNombreChange,
-                label = "Nombre",
+                label = "Nombre y apellido",
                 error = formulario.nombreError,
                 leadingIcon = Icons.Default.Person,
                 modifier = Modifier.fillMaxWidth()
@@ -178,7 +191,7 @@ private fun FormularioClienteCard(
                 label = "Teléfono",
                 error = formulario.telefonoError,
                 leadingIcon = Icons.Default.Phone,
-                ayuda = "Opcional, entre 6 y 9 dígitos",
+                ayuda = "Opcional, 9 dígitos",
                 keyboardType = KeyboardType.Phone,
                 modifier = Modifier.fillMaxWidth()
             )

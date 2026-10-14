@@ -52,6 +52,7 @@ class ClienteViewModelTest {
 
         val viewModel = nuevoViewModel()
 
+        viewModel.onDniChange("70123456")
         viewModel.onNombreChange("Farmacia Nueva Vida")
         viewModel.onCorreoChange("ventas@central.pe")
         viewModel.onTelefonoChange("989789123")
@@ -70,6 +71,7 @@ class ClienteViewModelTest {
 
         val viewModel = nuevoViewModel()
 
+        viewModel.onDniChange("70123456")
         viewModel.onNombreChange("Farmacia Nueva Vida")
         viewModel.onCorreoChange("ventas@central.pe")
         viewModel.registrar()
@@ -84,6 +86,7 @@ class ClienteViewModelTest {
 
         val viewModel = nuevoViewModel()
 
+        viewModel.onDniChange("70123456")
         viewModel.onNombreChange("Farmacia Nueva Vida")
         viewModel.onCorreoChange("ventas.central.pe")
         viewModel.registrar()

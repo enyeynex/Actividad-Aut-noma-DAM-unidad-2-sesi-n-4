@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -45,6 +46,13 @@ kotlin {
             implementation(libs.compose.uiTooling)
             // api: MainApplication (androidApp) usa androidContext() al arrancar Koin.
             api(libs.koin.android)
+            // Motor HTTP de Android y almacen cifrado para el token (sesion 10).
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.security.crypto)
+        }
+        iosMain.dependencies {
+            // Motor HTTP de iOS, basado en NSURLSession.
+            implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
             // api: androidApp llama a initKoin(), cuya firma expone KoinAppDeclaration.
@@ -60,10 +68,17 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            // Cliente REST hacia PharmaSoft con autenticacion JWT.
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.logging)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
     }
 }

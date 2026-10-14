@@ -53,6 +53,15 @@ class ClienteViewModel(
         }
     }
 
+    fun onDniChange(dni: String) {
+        _uiState.update {
+            it.copy(
+                formulario = it.formulario.copy(dni = dni, dniError = null),
+                mensajeExito = null
+            )
+        }
+    }
+
     fun onNombreChange(nombre: String) {
         _uiState.update {
             it.copy(
@@ -93,6 +102,7 @@ class ClienteViewModel(
             val formulario = _uiState.value.formulario
 
             registrarCliente(
+                dni = formulario.dni,
                 nombre = formulario.nombre,
                 correo = formulario.correo,
                 telefono = formulario.telefono
@@ -114,6 +124,7 @@ class ClienteViewModel(
                             it.copy(
                                 registrando = false,
                                 formulario = it.formulario.copy(
+                                    dniError = fallo.errores.dni,
                                     nombreError = fallo.errores.nombre,
                                     correoError = fallo.errores.correo,
                                     telefonoError = fallo.errores.telefono
