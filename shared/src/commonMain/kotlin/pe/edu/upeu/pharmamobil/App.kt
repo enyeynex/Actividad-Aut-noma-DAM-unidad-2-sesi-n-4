@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalPharmacy
@@ -54,7 +55,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import org.koin.compose.KoinContext
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import pe.edu.upeu.pharmamobil.di.ES_DEPURACION
+import pe.edu.upeu.pharmamobil.presentation.diagnostico.DiagnosticoScreen
+import pe.edu.upeu.pharmamobil.presentation.diagnostico.DiagnosticoViewModel
 
 import pe.edu.upeu.pharmamobil.domain.model.Sesion
 import pe.edu.upeu.pharmamobil.navigation.Screen
@@ -78,7 +83,8 @@ private val DESTINOS = listOf(
     Destino(Screen.Inicio, "Inicio", Icons.Default.Home),
     Destino(Screen.Productos, "Productos", Icons.Default.Medication),
     Destino(Screen.Clientes, "Clientes", Icons.Default.Person),
-    Destino(Screen.Pedidos, "Pedidos", Icons.Default.ShoppingCart)
+    Destino(Screen.Pedidos, "Pedidos", Icons.Default.ShoppingCart),
+    Destino(Screen.Diagnostico, "Pruebas de sesión", Icons.Default.BugReport)
 )
 
 
@@ -104,6 +110,7 @@ fun App() = KoinContext {
 
     val sesionViewModel: SesionViewModel = koinViewModel()
     val estado by sesionViewModel.uiState.collectAsStateWithLifecycle()
+    val esDepuracion = koinInject<Boolean>(qualifier = ES_DEPURACION)
 
     var darkTheme by rememberSaveable {
         mutableStateOf(false)
@@ -124,19 +131,26 @@ fun App() = KoinContext {
                     }
                 }
 
-            sesion == null ->
+            sesion == null -> {
+                val diagnostico: DiagnosticoViewModel = koinViewModel(key = "diagnostico-login-${estado.idSesion}")
+                val pruebas by diagnostico.uiState.collectAsStateWithLifecycle()
                 LoginScreen(
                     estado = estado,
                     onUsuarioChange = sesionViewModel::onUsuarioChange,
                     onClaveChange = sesionViewModel::onClaveChange,
-                    onIngresar = sesionViewModel::iniciarSesion
+                    onIngresar = sesionViewModel::iniciarSesion,
+                    // Solo en depuracion: prueba del cierre de sesion completo.
+                    resultadoPrueba = pruebas.resultado,
+                    onProbarSinSesion = if (esDepuracion) diagnostico::peticionSinSesion else null
                 )
+            }
 
             // La clave reinicia la navegacion y los ViewModel con cada sesion nueva.
             else -> key(estado.idSesion) {
                 PantallaPrincipal(
                     sesion = sesion,
                     idSesion = estado.idSesion,
+                    esDepuracion = esDepuracion,
                     darkTheme = darkTheme,
                     onCambiarTema = { darkTheme = it },
                     onCerrarSesion = sesionViewModel::cerrarSesion
@@ -151,13 +165,16 @@ fun App() = KoinContext {
 private fun PantallaPrincipal(
     sesion: Sesion,
     idSesion: Int,
+    esDepuracion: Boolean,
     darkTheme: Boolean,
     onCambiarTema: (Boolean) -> Unit,
     onCerrarSesion: () -> Unit
 ) {
 
     val puedeVerClientes = sesion.puede(CLIENTES_LEER)
-    val destinos = DESTINOS.filter { it.screen != Screen.Clientes || puedeVerClientes }
+    val destinos = DESTINOS
+        .filter { it.screen != Screen.Clientes || puedeVerClientes }
+        .filter { it.screen != Screen.Diagnostico || esDepuracion }
 
     var pantallaActual by rememberSaveable(stateSaver = ScreenSaver) {
         mutableStateOf<Screen>(Screen.Inicio)
@@ -371,6 +388,11 @@ private fun PantallaPrincipal(
                         Screen.Clientes ->
                             ClienteScreen(
                                 viewModel = koinViewModel(key = "clientes-$idSesion")
+                            )
+
+                        Screen.Diagnostico ->
+                            DiagnosticoScreen(
+                                viewModel = koinViewModel(key = "diagnostico-$idSesion")
                             )
 
                         Screen.Pedidos ->

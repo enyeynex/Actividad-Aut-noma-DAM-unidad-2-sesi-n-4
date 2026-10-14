@@ -22,6 +22,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import pe.edu.upeu.pharmamobil.presentation.components.ValidatedTextField
+import pe.edu.upeu.pharmamobil.presentation.diagnostico.ResultadoCard
 
 /**
  * Pantalla de inicio de sesion. No conoce el token ni el servidor: solo
@@ -41,7 +43,9 @@ fun LoginScreen(
     onUsuarioChange: (String) -> Unit,
     onClaveChange: (String) -> Unit,
     onIngresar: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    resultadoPrueba: String? = null,
+    onProbarSinSesion: (() -> Unit)? = null
 ) {
 
     Surface(
@@ -143,6 +147,18 @@ fun LoginScreen(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                // Solo en depuracion: comprueba que tras cerrar sesion el
+                // cliente HTTP ya no envia el token.
+                onProbarSinSesion?.let { probar ->
+                    TextButton(onClick = probar) {
+                        Text("Probar petición sin sesión (depuración)")
+                    }
+                }
+
+                resultadoPrueba?.let { resultado ->
+                    ResultadoCard(titulo = "Petición después de cerrar sesión", texto = resultado)
+                }
             }
         }
     }

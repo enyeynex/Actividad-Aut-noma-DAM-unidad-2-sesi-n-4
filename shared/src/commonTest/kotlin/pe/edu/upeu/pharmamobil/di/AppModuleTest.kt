@@ -32,6 +32,7 @@ import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.SesionGuardadaUseCase
 import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteViewModel
 import pe.edu.upeu.pharmamobil.presentation.detalle.DetalleProductoViewModel
+import pe.edu.upeu.pharmamobil.presentation.diagnostico.DiagnosticoViewModel
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoViewModel
 import pe.edu.upeu.pharmamobil.presentation.sesion.SesionViewModel
 import kotlin.test.AfterTest
@@ -113,5 +114,6 @@ class AppModuleTest {
         koin.get<ClienteViewModel>()
         koin.get<DetalleProductoViewModel>()
         koin.get<SesionViewModel>()
+        koin.get<DiagnosticoViewModel>()
     }
 }

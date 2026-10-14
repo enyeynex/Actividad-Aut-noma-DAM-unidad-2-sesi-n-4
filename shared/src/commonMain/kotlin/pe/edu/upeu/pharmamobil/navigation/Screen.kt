@@ -8,4 +8,7 @@ sealed class Screen {
     data object Clientes : Screen()
 
     data object Pedidos : Screen()
+
+    /** Solo en depuracion: pruebas de la actividad autonoma de la sesion 10. */
+    data object Diagnostico : Screen()
 }

@@ -6,6 +6,7 @@ import org.koin.core.module.Module
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import pe.edu.upeu.pharmamobil.data.diagnostico.DiagnosticoSesionRest
 import pe.edu.upeu.pharmamobil.data.remote.crearHttpClient
 import pe.edu.upeu.pharmamobil.data.repository.AuthRepositorioRest
 import pe.edu.upeu.pharmamobil.data.repository.ClienteRepositorioRest
@@ -14,6 +15,7 @@ import pe.edu.upeu.pharmamobil.domain.repository.AuthRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ClienteRepository
 import pe.edu.upeu.pharmamobil.domain.repository.ProductoRepository
 import pe.edu.upeu.pharmamobil.domain.sesion.AvisosDeSesion
+import pe.edu.upeu.pharmamobil.domain.sesion.DiagnosticoSesion
 import pe.edu.upeu.pharmamobil.domain.usecase.CerrarSesionUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.IniciarSesionUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.ListarClientesUseCase
@@ -23,6 +25,7 @@ import pe.edu.upeu.pharmamobil.domain.usecase.RegistrarProductoUseCase
 import pe.edu.upeu.pharmamobil.domain.usecase.SesionGuardadaUseCase
 import pe.edu.upeu.pharmamobil.presentation.cliente.ClienteViewModel
 import pe.edu.upeu.pharmamobil.presentation.detalle.DetalleProductoViewModel
+import pe.edu.upeu.pharmamobil.presentation.diagnostico.DiagnosticoViewModel
 import pe.edu.upeu.pharmamobil.presentation.producto.ProductoViewModel
 import pe.edu.upeu.pharmamobil.presentation.sesion.SesionViewModel
 
@@ -38,6 +41,8 @@ val dataModule = module {
     single<AuthRepository> { AuthRepositorioRest(get(), get()) }
     single<ProductoRepository> { ProductoRepositorioRest(get(), get()) }
     single<ClienteRepository> { ClienteRepositorioRest(get(), get()) }
+    // Herramienta de pruebas de la actividad autonoma (solo se ofrece en depuracion).
+    single<DiagnosticoSesion> { DiagnosticoSesionRest(get(), get(), get()) }
 }
 
 val domainModule = module {
@@ -57,6 +62,7 @@ val presentationModule = module {
     // El Compartidor lo aporta el platformModule de cada plataforma.
     viewModel { DetalleProductoViewModel(get(), get()) }
     viewModel { SesionViewModel(get(), get(), get(), get()) }
+    viewModel { DiagnosticoViewModel(get(), get(), get(ES_DEPURACION)) }
 }
 
 
