@@ -114,6 +114,19 @@ Sesión 10 · la app inicia sesión contra PharmaSoft, guarda el JWT en el almac
 
 Las pruebas de `ClienteHttpAutenticadoTest` usan `MockEngine`: comprueban la cabecera `Bearer`, que no haya petición previa sin token, el `clearToken()` tras un segundo login, el registro saneado y el mapeo de 401 y 403 sin necesitar el servidor.
 
+## Validación de la sesión (actividad autónoma)
+
+Herramientas para provocar los escenarios de token de la actividad autónoma de la sesión 10:
+
+- **Pantalla «Pruebas de sesión»** (menú lateral, solo en compilaciones de depuración): muestra si hay token en el almacén y cuándo vence, consulta el inventario con el token actual, altera un carácter de la firma del token guardado y envía el token con el prefijo `bearer` en minúscula.
+- **«Probar petición sin sesión»** (pantalla de login, solo en depuración): comprueba que tras cerrar sesión el cliente HTTP ya no envía la cabecera `Authorization`.
+- **`docs/matriz-permisos.ps1`**: ejecuta las seis operaciones de la matriz con `admin`, `vendedor` y `almacen` e imprime el código HTTP de cada una.
+
+Correcciones derivadas de la bitácora:
+
+- Al cerrar sesión, el login ya no muestra el usuario anterior.
+- Un 401 a mitad de la sesión (token alterado, usuario deshabilitado) muestra el motivo que envía el servidor en lugar de «Usuario o contraseña incorrectos».
+
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
